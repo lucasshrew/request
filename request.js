@@ -570,12 +570,21 @@ Request.prototype.init = function (options) {
     if (self._form && !self.hasHeader('content-length')) {
       // Before ending the request, we had to compute the length of the whole form, asyncly
       self.setHeader(self._form.getHeaders(), true)
-      self._form.getLength(function (err, length) {
-        if (!err && !isNaN(length)) {
-          self.setHeader('content-length', length)
-        }
+
+      var chunked = false
+      if (self.hasHeader('transfer-encoding') && self.headers['transfer-encoding'] === 'chunked')
+        chunked = true
+
+      if(!chunked) {
+        self._form.getLength(function (err, length) {
+          if (!err && !isNaN(length)) {
+            self.setHeader('content-length', length)
+          }
+          end()
+        })
+      } else {
         end()
-      })
+      }
     } else {
       end()
     }
